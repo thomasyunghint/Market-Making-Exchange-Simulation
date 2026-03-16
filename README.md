@@ -2,7 +2,7 @@
 
 A mobile-friendly practice tool for trading competition market making games. Built for the Trading at Georgia Tech intercollegiate competition format.
 
-![Market Making Simulation](Market Making Exchange Simulation.png)
+![Market Making Simulation](Market_Making_Exchange_Simulation.png)
 
 ## Play Now
 
