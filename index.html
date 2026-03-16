@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Market Making Simulation</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{--bg:#0a0e17;--bg2:#111827;--bg3:#1a2235;--border:#2a3555;--text:#e2e8f0;--muted:#8892a8;--green:#22c55e;--red:#ef4444;--blue:#3b82f6;--amber:#f59e0b;--purple:#a855f7}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,system-ui,sans-serif;font-size:14px;overscroll-behavior:none;overflow-x:hidden}
+button{font-family:inherit;-webkit-appearance:none}
+
+.app{max-width:500px;margin:0 auto;padding:8px 8px 0}
+.header{text-align:center;padding:8px 0;margin-bottom:6px}
+.header h1{font-size:18px;font-weight:700;color:var(--blue)}
+
+.mode-select{display:flex;gap:4px;margin-bottom:6px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.mode-btn{background:var(--bg2);border:1px solid var(--border);color:var(--muted);padding:6px 10px;border-radius:6px;cursor:pointer;font-size:11px;white-space:nowrap;flex-shrink:0}
+.mode-btn.active{background:var(--blue);border-color:var(--blue);color:#fff}
+
+.game-area{display:none;padding-bottom:170px}
+.game-area.active{display:block}
+
+.top-bar{display:flex;gap:4px;margin-bottom:6px}
+.mini-stat{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:4px;text-align:center}
+.mini-stat .label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px}
+.mini-stat .val{font-size:16px;font-weight:700}
+.mini-stat .val.pos{color:var(--green)}.mini-stat .val.neg{color:var(--red)}
+
+.timer-bar{height:3px;background:var(--bg3);border-radius:2px;margin-bottom:6px;overflow:hidden}
+.timer-fill{height:100%;background:var(--blue);transition:width .5s linear}
+
+.cards-strip{display:flex;gap:4px;overflow-x:auto;padding:6px 0;margin-bottom:6px;-webkit-overflow-scrolling:touch}
+.card{min-width:36px;height:50px;border-radius:4px;border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:var(--bg3);flex-shrink:0}
+.card.red{color:var(--red)}.card.black{color:var(--text)}
+.card.hidden{background:var(--bg);border-style:dashed;color:var(--muted)}
+
+.tracker-strip{display:flex;gap:6px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;margin-bottom:6px;overflow-x:auto}
+.t-item{text-align:center;flex-shrink:0}
+.t-item .t-label{font-size:9px;color:var(--muted)}
+.t-item .t-val{font-size:15px;font-weight:700}
+
+.book-wrap{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:6px}
+.book-side{background:var(--bg2);border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.book-hdr{font-size:10px;font-weight:700;padding:4px 8px;background:var(--bg3);text-transform:uppercase;letter-spacing:1px}
+.book-hdr.bid{color:var(--green)}.book-hdr.ask{color:var(--red)}
+.book-row{display:flex;justify-content:space-between;padding:8px;font-size:12px;cursor:pointer;border-bottom:1px solid rgba(42,53,85,0.5);min-height:36px;align-items:center;transition:background .1s}
+.book-row:active{background:var(--bg3)}
+.book-row.mine{background:rgba(59,130,246,0.1)}
+.book-row .bp{color:var(--green);font-weight:700}.book-row .ap{color:var(--red);font-weight:700}
+.book-row .sz{color:var(--muted);font-size:11px}
+.book-empty{padding:12px;color:var(--muted);font-size:11px;text-align:center}
+
+.log{max-height:80px;overflow-y:auto;padding:4px 8px;margin-bottom:6px;background:var(--bg2);border:1px solid var(--border);border-radius:6px}
+.log-entry{padding:2px 0;font-size:10px;color:var(--muted)}
+.log-entry.profit{color:var(--green)}.log-entry.loss{color:var(--red)}.log-entry.info{color:var(--blue)}.log-entry.warn{color:var(--amber)}
+
+.order-dock{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border);padding:8px;z-index:100;padding-bottom:max(8px,env(safe-area-inset-bottom))}
+.order-dock-inner{max-width:500px;margin:0 auto}
+
+.price-row{display:flex;gap:4px;align-items:center;margin-bottom:6px}
+.price-display{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:18px;font-weight:700;text-align:center;color:var(--text);min-height:44px;display:flex;align-items:center;justify-content:center}
+.adj-btn{width:44px;height:44px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.adj-btn:active{background:var(--border)}
+.adj-btn.big{font-size:13px}
+
+.size-row{display:flex;gap:4px;align-items:center;margin-bottom:6px}
+.size-label{font-size:10px;color:var(--muted);min-width:28px}
+.size-btn{flex:1;height:32px;border-radius:4px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:12px;font-weight:600;cursor:pointer}
+.size-btn.active{background:var(--blue);border-color:var(--blue);color:#fff}
+.size-btn:active{opacity:0.7}
+
+.action-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px}
+.act-btn{height:44px;border-radius:6px;border:none;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.act-btn:active{opacity:0.8}
+.act-buy{background:var(--green);color:#000}
+.act-sell{background:var(--red);color:#fff}
+.act-cancel{background:var(--bg3);color:var(--amber);border:1px solid var(--amber)}
+
+.alert{position:fixed;top:8px;left:8px;right:8px;z-index:200;padding:10px;border-radius:8px;font-size:12px;font-weight:600;text-align:center;animation:slideDown .3s}
+.alert-danger{background:rgba(239,68,68,0.95);color:#fff}
+.alert-success{background:rgba(34,197,94,0.95);color:#fff}
+.alert-info{background:rgba(59,130,246,0.95);color:#fff}
+@keyframes slideDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
+
+#preGame{padding:12px}
+.hint-box{background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.3);border-radius:8px;padding:10px;margin-bottom:10px;font-size:12px;color:var(--purple)}
+.settings-row{display:flex;gap:6px;align-items:center;margin-bottom:8px}
+.settings-row label{font-size:11px;color:var(--muted);min-width:70px}
+.settings-row input[type=range]{flex:1;accent-color:var(--blue)}
+.btn-start{width:100%;padding:14px;border-radius:8px;border:none;background:var(--blue);color:#fff;font-size:16px;font-weight:700;cursor:pointer}
+.btn-start:active{opacity:0.9}
+
+.diff-row{display:flex;gap:4px}
+.diff-btn{flex:1;padding:8px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--muted);font-size:12px;font-weight:600;text-align:center;cursor:pointer}
+.diff-btn.active{background:var(--blue);border-color:var(--blue);color:#fff}
+
+.session-stats{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px;margin-top:10px}
+.session-stats h3{font-size:11px;color:var(--muted);margin-bottom:6px}
+.s-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.s-item{text-align:center}
+.s-item .sl{font-size:9px;color:var(--muted)}.s-item .sv{font-size:15px;font-weight:700}
+
+#coachBox{margin-top:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px;display:none}
+#coachBox h3{font-size:11px;color:var(--amber);margin-bottom:6px}
+.grade-row{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:8px}
+.grade-item{text-align:center}
+.grade-item .gl{font-size:9px;color:var(--muted)}.grade-item .gv{font-size:22px;font-weight:700}
+.coach-tip{font-size:11px;margin-bottom:4px;line-height:1.5}
+.coach-focus{margin-top:6px;padding:8px;border-radius:6px;font-size:11px;line-height:1.5}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="header"><h1>Market Making Simulation</h1></div>
+
+  <div class="mode-select" id="modeSelect">
+    <button class="mode-btn active" data-mode="sum">Sum</button>
+    <button class="mode-btn" data-mode="pairs">Pairs</button>
+    <button class="mode-btn" data-mode="product">Product</button>
+    <button class="mode-btn" data-mode="power">Power</button>
+  </div>
+
+  <div id="alertBox"></div>
+
+  <div id="preGame">
+    <div class="hint-box" id="hintBox"><strong>Sum:</strong> Contract = sum of N cards (A=1..K=13). Deviation method: start N×7, add (card−7) per reveal.</div>
+    <div class="settings-row">
+      <label>Speed</label>
+      <input type="range" min="8" max="25" value="15" id="speedSlider">
+      <span id="speedVal" style="font-size:13px;font-weight:700;min-width:30px">15s</span>
+    </div>
+    <div class="settings-row">
+      <label>Difficulty</label>
+      <div class="diff-row" style="flex:1">
+        <div class="diff-btn active" data-diff="easy" onclick="setDiff(this)">Easy</div>
+        <div class="diff-btn" data-diff="normal" onclick="setDiff(this)">Normal</div>
+        <div class="diff-btn" data-diff="hard" onclick="setDiff(this)">Hard</div>
+      </div>
+    </div>
+    <button class="btn-start" onclick="startGame()">Start Round</button>
+
+    <div id="sessionStats" style="display:none">
+      <div class="session-stats">
+        <h3>Session</h3>
+        <div class="s-grid">
+          <div class="s-item"><div class="sl">Rounds</div><div class="sv" id="ssR">0</div></div>
+          <div class="s-item"><div class="sl">Avg P&L</div><div class="sv" id="ssA">0</div></div>
+          <div class="s-item"><div class="sl">Win Rate</div><div class="sv" id="ssW">0%</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="coachBox">
+      <h3>Round Review</h3>
+      <div id="coachContent"></div>
+    </div>
+  </div>
+
+  <div class="game-area" id="gameArea">
+    <div class="timer-bar"><div class="timer-fill" id="timerFill"></div></div>
+
+    <div class="top-bar">
+      <div class="mini-stat"><div class="label">FV</div><div class="val" id="fvD">?</div></div>
+      <div class="mini-stat"><div class="label">Pos</div><div class="val" id="posD">0</div></div>
+      <div class="mini-stat"><div class="label">Real</div><div class="val" id="rpD">0</div></div>
+      <div class="mini-stat"><div class="label">Total</div><div class="val" id="tpD">0</div></div>
+    </div>
+
+    <div class="cards-strip" id="cardRow"></div>
+
+    <div class="tracker-strip" id="trackerStrip" style="display:none"></div>
+
+    <div class="book-wrap">
+      <div class="book-side">
+        <div class="book-hdr bid">Bids</div>
+        <div id="bidBook"></div>
+      </div>
+      <div class="book-side">
+        <div class="book-hdr ask">Asks</div>
+        <div id="askBook"></div>
+      </div>
+    </div>
+
+    <div class="log" id="log"></div>
+  </div>
+</div>
+
+<div class="order-dock" id="orderDock" style="display:none">
+  <div class="order-dock-inner">
+    <div class="price-row">
+      <div class="adj-btn big" onclick="adjPrice(-10)">−10</div>
+      <div class="adj-btn" onclick="adjPrice(-1)">−</div>
+      <div class="price-display" id="priceDisplay" onclick="editPrice()">70</div>
+      <div class="adj-btn" onclick="adjPrice(1)">+</div>
+      <div class="adj-btn big" onclick="adjPrice(10)">+10</div>
+    </div>
+    <div class="size-row">
+      <span class="size-label">Size</span>
+      <button class="size-btn" onclick="setSize(10,this)">10</button>
+      <button class="size-btn active" onclick="setSize(20,this)">20</button>
+      <button class="size-btn" onclick="setSize(50,this)">50</button>
+      <button class="size-btn" onclick="setSize(100,this)">100</button>
+    </div>
+    <div class="action-row">
+      <button class="act-btn act-buy" onclick="placeBid()">BUY</button>
+      <button class="act-btn act-cancel" onclick="cancelAll()">CANCEL</button>
+      <button class="act-btn act-sell" onclick="placeAsk()">SELL</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const suits=['hearts','diamonds','clubs','spades'];
+const suitSym={hearts:'♥',diamonds:'♦',clubs:'♣',spades:'♠'};
+const suitVal={clubs:1,diamonds:2,hearts:3,spades:4};
+const rn=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+const hintTexts={
+  sum:'<strong>Sum:</strong> Contract = sum of N cards (A=1..K=13). Deviation: start N×7, add (card−7) per reveal.',
+  pairs:'<strong>Pairs:</strong> nC2 pairs per rank × 100. Track frequencies. Duplicates = exponential value.',
+  product:'<strong>Product:</strong> Multiply suit values (♣1 ♦2 ♥3 ♠4) × 10. Clubs kill. Spades explode.',
+  power:'<strong>Power:</strong> 2^(red cards). Exponential. Each red doubles. CALL@128, PUT@128.'
+};
+
+let mode='sum',difficulty='easy',revealSpeed=15;
+let orderPrice=70,orderSize=20;
+let G={},session={rounds:0,totalPnl:0,wins:0};
+let roundMetrics={};
+
+document.getElementById('speedSlider').addEventListener('input',function(){
+  revealSpeed=parseInt(this.value);
+  document.getElementById('speedVal').textContent=revealSpeed+'s';
+});
+document.querySelectorAll('.mode-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.mode-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');mode=b.dataset.mode;
+    document.getElementById('hintBox').innerHTML=hintTexts[mode];
+    resetToPreGame();
+  });
+});
+function setDiff(el){document.querySelectorAll('.diff-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');difficulty=el.dataset.diff}
+function setSize(s,el){orderSize=s;document.querySelectorAll('.size-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active')}
+function adjPrice(d){
+  if(mode==='pairs')orderPrice+=d*10;
+  else if(mode==='product')orderPrice+=d*5;
+  else orderPrice+=d;
+  orderPrice=Math.max(0,Math.round(orderPrice));
+  document.getElementById('priceDisplay').textContent=orderPrice;
+}
+function editPrice(){
+  let val=prompt('Enter price:',orderPrice);
+  if(val!==null&&!isNaN(parseInt(val))){orderPrice=parseInt(val);document.getElementById('priceDisplay').textContent=orderPrice}
+}
+function resetToPreGame(){
+  document.getElementById('preGame').style.display='block';
+  document.getElementById('gameArea').classList.remove('active');
+  document.getElementById('orderDock').style.display='none';
+  if(G.timer)clearInterval(G.timer);
+}
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function buildDeck(){let d=[];for(let r=1;r<=13;r++)for(let s of suits)d.push({rank:r,suit:s});return d}
+function log(m,c=''){document.getElementById('log').innerHTML=`<div class="log-entry ${c}">${m}</div>`+document.getElementById('log').innerHTML}
+function showAlert(m,t='info'){let b=document.getElementById('alertBox');b.innerHTML=`<div class="alert alert-${t}">${m}</div>`;setTimeout(()=>b.innerHTML='',2500)}
+
+function renderCards(){
+  let h='';
+  for(let i=0;i<G.cards.length;i++){
+    if(i<G.revealed){let c=G.cards[i];let red=c.suit==='hearts'||c.suit==='diamonds';
+      h+=`<div class="card ${red?'red':'black'}"><span>${rn[c.rank-1]}</span><span>${suitSym[c.suit]}</span></div>`}
+    else h+=`<div class="card hidden"><span>?</span></div>`;
+  }
+  document.getElementById('cardRow').innerHTML=h;
+}
+
+function calcFairValue(){
+  if(mode==='sum'){let k=0;for(let i=0;i<G.revealed;i++)k+=G.cards[i].rank;return k+(G.N-G.revealed)*7}
+  if(mode==='pairs'){
+    let f={};for(let i=0;i<G.revealed;i++){let r=G.cards[i].rank;f[r]=(f[r]||0)+1}
+    let cp=0;for(let r in f){let n=f[r];cp+=n*(n-1)/2}
+    let rem=G.N-G.revealed;if(G.revealed===0)return 900;
+    let est=0;if(rem>0&&G.revealed>0){for(let i=0;i<rem;i++){let tf=0;for(let r in f)tf+=f[r];est+=tf/(G.revealed+i+1)*0.8}}
+    return Math.round((cp+est)*100);
+  }
+  if(mode==='product'){let p=1;for(let i=0;i<G.revealed;i++)p*=suitVal[G.cards[i].suit];if(G.revealed===G.N)return p*10;return Math.round(p*Math.pow(2.5,G.N-G.revealed)*10)}
+  if(mode==='power'){let r=0;for(let i=0;i<G.revealed;i++)if(G.cards[i].suit==='hearts'||G.cards[i].suit==='diamonds')r++;let rem=G.N-G.revealed;if(rem===0)return Math.pow(2,r);return Math.round(Math.pow(2,r)*Math.pow(1.5,rem))}
+  return 0;
+}
+function calcTrueValue(){
+  if(mode==='sum'){let s=0;for(let c of G.cards)s+=c.rank;return s}
+  if(mode==='pairs'){let f={};for(let c of G.cards)f[c.rank]=(f[c.rank]||0)+1;let p=0;for(let r in f){let n=f[r];p+=n*(n-1)/2}return p*100}
+  if(mode==='product'){let p=1;for(let c of G.cards)p*=suitVal[c.suit];return p*10}
+  if(mode==='power'){let r=0;for(let c of G.cards)if(c.suit==='hearts'||c.suit==='diamonds')r++;return Math.pow(2,r)}
+}
+
+function updateTracker(){
+  let el=document.getElementById('trackerStrip');
+  if(mode==='sum'){el.style.display='flex';let d=0;for(let i=0;i<G.revealed;i++)d+=(G.cards[i].rank-7);
+    el.innerHTML=`<div class="t-item"><div class="t-label">Base</div><div class="t-val">${G.N*7}</div></div><div class="t-item"><div class="t-label">Dev</div><div class="t-val" style="color:${d>=0?'var(--green)':'var(--red)'}">${d>=0?'+':''}${d}</div></div><div class="t-item"><div class="t-label">FV</div><div class="t-val" style="color:var(--blue)">${Math.round(G.fv)}</div></div><div class="t-item"><div class="t-label">Left</div><div class="t-val">${G.N-G.revealed}</div></div>`}
+  if(mode==='pairs'){el.style.display='flex';let f={};for(let i=0;i<G.revealed;i++){let r=G.cards[i].rank;f[r]=(f[r]||0)+1}let tp=0,h='';for(let r in f){let n=f[r],p=n*(n-1)/2;tp+=p;h+=`<div class="t-item"><div class="t-label">${rn[parseInt(r)-1]}</div><div class="t-val">${n}</div></div>`}h+=`<div class="t-item"><div class="t-label">Pairs</div><div class="t-val" style="color:var(--blue)">${tp}</div></div>`;el.innerHTML=h}
+  if(mode==='product'){el.style.display='flex';let cn={clubs:0,diamonds:0,hearts:0,spades:0},p=1;for(let i=0;i<G.revealed;i++){cn[G.cards[i].suit]++;p*=suitVal[G.cards[i].suit]}
+    el.innerHTML=`<div class="t-item"><div class="t-label">♣</div><div class="t-val">${cn.clubs}</div></div><div class="t-item"><div class="t-label">♦</div><div class="t-val" style="color:var(--amber)">${cn.diamonds}</div></div><div class="t-item"><div class="t-label">♥</div><div class="t-val" style="color:var(--red)">${cn.hearts}</div></div><div class="t-item"><div class="t-label">♠</div><div class="t-val" style="color:var(--purple)">${cn.spades}</div></div><div class="t-item"><div class="t-label">Run×</div><div class="t-val" style="color:var(--blue)">${p}</div></div>`}
+  if(mode==='power'){el.style.display='flex';let r=0,b=0;for(let i=0;i<G.revealed;i++){if(G.cards[i].suit==='hearts'||G.cards[i].suit==='diamonds')r++;else b++}
+    el.innerHTML=`<div class="t-item"><div class="t-label">Red</div><div class="t-val" style="color:var(--red)">${r}</div></div><div class="t-item"><div class="t-label">Black</div><div class="t-val">${b}</div></div><div class="t-item"><div class="t-label">2^${r}</div><div class="t-val" style="color:var(--blue)">${Math.pow(2,r)}</div></div><div class="t-item"><div class="t-label">Left</div><div class="t-val">${G.N-G.revealed}</div></div>`}
+}
+
+function updateStats(){
+  document.getElementById('fvD').textContent=G.revealed>0?Math.round(G.fv):'?';
+  document.getElementById('posD').textContent=G.pos;
+  document.getElementById('posD').className='val'+(G.pos>0?' pos':G.pos<0?' neg':'');
+  let rp=Math.round(G.realPnl);
+  document.getElementById('rpD').textContent=rp;
+  document.getElementById('rpD').className='val'+(rp>=0?' pos':' neg');
+  let u=G.pos!==0?(G.pos>0?(G.fv-G.avgCost)*G.pos:(G.avgCost-G.fv)*Math.abs(G.pos)):0;
+  let tp=Math.round(G.realPnl+u);
+  document.getElementById('tpD').textContent=tp;
+  document.getElementById('tpD').className='val'+(tp>=0?' pos':' neg');
+  // auto-suggest price based on FV
+  if(G.revealed>0&&G.fv){orderPrice=Math.round(G.fv);document.getElementById('priceDisplay').textContent=orderPrice}
+}
+
+function executeTrade(price,size,isBuy){
+  if(isBuy){if(G.pos>=0){G.avgCost=(G.avgCost*G.pos+price*size)/(G.pos+size);G.pos+=size}else if(size<=Math.abs(G.pos)){G.realPnl+=(G.avgCost-price)*size;G.pos+=size;if(G.pos===0)G.avgCost=0}else{G.realPnl+=(G.avgCost-price)*Math.abs(G.pos);let r=size-Math.abs(G.pos);G.avgCost=price;G.pos=r}}
+  else{if(G.pos<=0){G.avgCost=(G.avgCost*Math.abs(G.pos)+price*size)/(Math.abs(G.pos)+size);G.pos-=size}else if(size<=G.pos){G.realPnl+=(price-G.avgCost)*size;G.pos-=size;if(G.pos===0)G.avgCost=0}else{G.realPnl+=(price-G.avgCost)*G.pos;let r=size-G.pos;G.avgCost=price;G.pos=-r}}
+}
+
+function renderBook(){
+  let ab=[...G.myBids.map(o=>({...o,mine:1})),...G.botBids,...G.rivalBids].sort((a,b)=>b.price-a.price);
+  let aa=[...G.myAsks.map(o=>({...o,mine:1})),...G.botAsks,...G.rivalAsks].sort((a,b)=>a.price-b.price);
+  let bh='',ah='';
+  for(let o of ab.slice(0,6)){let t=o.mine?'you':o.rival?'rival':'bot';bh+=`<div class="book-row${o.mine?' mine':''}" onclick="hitBid(${o.price},${o.size},${o.mine||0},${o.rival||0})"><span class="bp">$${Math.round(o.price)}</span><span class="sz">${o.size} ${t}</span></div>`}
+  for(let o of aa.slice(0,6)){let t=o.mine?'you':o.rival?'rival':'bot';ah+=`<div class="book-row${o.mine?' mine':''}" onclick="hitAsk(${o.price},${o.size},${o.mine||0},${o.rival||0})"><span class="ap">$${Math.round(o.price)}</span><span class="sz">${o.size} ${t}</span></div>`}
+  document.getElementById('bidBook').innerHTML=bh||'<div class="book-empty">—</div>';
+  document.getElementById('askBook').innerHTML=ah||'<div class="book-empty">—</div>';
+}
+
+function hitAsk(p,s,mine,rival){
+  if(!G.running||mine)return;
+  executeTrade(p,s,true);
+  if(rival){let idx=G.rivalAsks.findIndex(o=>o.price===p);if(idx>=0)G.rivalAsks.splice(idx,1)}
+  else{let idx=G.botAsks.findIndex(o=>o.price===p);if(idx>=0)G.botAsks.splice(idx,1)}
+  log(`Buy ${s} @ $${Math.round(p)}`,p<G.fv?'profit':'loss');
+  updateStats();renderBook();
+}
+function hitBid(p,s,mine,rival){
+  if(!G.running||mine)return;
+  executeTrade(p,s,false);
+  if(rival){let idx=G.rivalBids.findIndex(o=>o.price===p);if(idx>=0)G.rivalBids.splice(idx,1)}
+  else{let idx=G.botBids.findIndex(o=>o.price===p);if(idx>=0)G.botBids.splice(idx,1)}
+  log(`Sell ${s} @ $${Math.round(p)}`,p>G.fv?'profit':'loss');
+  updateStats();renderBook();
+}
+
+function placeBid(){
+  if(!G.running)return;
+  G.myBids=G.myBids.filter(o=>o.price!==orderPrice);
+  G.myBids.push({price:orderPrice,size:orderSize});
+  let warn=G.revealed>0&&orderPrice>G.fv?` ⚠ above FV ${Math.round(G.fv)}`:'';
+  log(`Bid: ${orderSize} @ $${orderPrice}${warn}`,warn?'warn':'');
+  renderBook();
+}
+function placeAsk(){
+  if(!G.running)return;
+  G.myAsks=G.myAsks.filter(o=>o.price!==orderPrice);
+  G.myAsks.push({price:orderPrice,size:orderSize});
+  let warn=G.revealed>0&&orderPrice<G.fv?` ⚠ below FV ${Math.round(G.fv)}`:'';
+  log(`Ask: ${orderSize} @ $${orderPrice}${warn}`,warn?'warn':'');
+  renderBook();
+}
+function cancelAll(){
+  G.myBids=[];G.myAsks=[];
+  G.cancelImmunity=G.elapsed+3; // 3 second immunity after cancel
+  log('Cancelled all','warn');
+  renderBook();
+}
+
+function checkAdverse(){
+  if(G.cancelImmunity&&G.elapsed<G.cancelImmunity)return; // immunity period
+  let tv=calcTrueValue(),sniped=false;
+  G.myAsks=G.myAsks.filter(o=>{if(o.price<tv-G.adverseMax){executeTrade(o.price,o.size,false);log(`⚠ ADVERSE bought ask $${Math.round(o.price)} (true≈${Math.round(tv)})`,'loss');sniped=true;return false}return true});
+  G.myBids=G.myBids.filter(o=>{if(o.price>tv+G.adverseMax){executeTrade(o.price,o.size,true);log(`⚠ ADVERSE sold to bid $${Math.round(o.price)} (true≈${Math.round(tv)})`,'loss');sniped=true;return false}return true});
+  if(sniped){showAlert('Adverse bot hit you!','danger');updateStats();roundMetrics.gotSniped++}
+}
+
+function spawnBotOrders(){
+  G.botBids=[];G.botAsks=[];let fv=G.fv;
+  let sp=mode==='sum'?[2,4,6,8]:mode==='pairs'?[50,100,150,200]:mode==='product'?[20,50,100,150]:[10,20,40,60];
+  for(let i=0;i<4;i++){let sz=Math.max(5,Math.round(18/(i+1)));G.botBids.push({price:Math.round(fv-sp[i]),size:sz});G.botAsks.push({price:Math.round(fv+sp[i]),size:sz})}
+}
+function spawnRivalOrders(){
+  G.rivalBids=[];G.rivalAsks=[];let fv=G.fv;
+  let bs=mode==='sum'?3:mode==='pairs'?80:mode==='product'?40:15;
+  let off=bs+Math.floor(Math.random()*bs);
+  G.rivalBids.push({price:Math.round(fv-off),size:15+Math.floor(Math.random()*20),rival:1});
+  G.rivalAsks.push({price:Math.round(fv+off),size:15+Math.floor(Math.random()*20),rival:1});
+}
+function takerBotAct(){
+  let filled=0,maxVol=60;
+  G.myAsks.sort((a,b)=>a.price-b.price);
+  G.myAsks=G.myAsks.filter(o=>{let d=o.price-G.fv;let ms=mode==='sum'?8:mode==='pairs'?200:mode==='product'?100:50;if(d>0&&d<=ms&&filled<maxVol){let t=Math.min(o.size,Math.max(3,Math.round(o.size*Math.max(0.3,1-d/(ms*0.8)))),maxVol-filled);if(t>0){executeTrade(o.price,t,false);filled+=t;log(`Taker bought ${t} @ $${Math.round(o.price)}`,'profit');o.size-=t;if(o.size<=0)return false}}return true});
+  G.myBids.sort((a,b)=>b.price-a.price);
+  G.myBids=G.myBids.filter(o=>{let d=G.fv-o.price;let ms=mode==='sum'?8:mode==='pairs'?200:mode==='product'?100:50;if(d>0&&d<=ms&&filled<maxVol){let t=Math.min(o.size,Math.max(3,Math.round(o.size*Math.max(0.3,1-d/(ms*0.8)))),maxVol-filled);if(t>0){executeTrade(o.price,t,true);filled+=t;log(`Taker sold ${t} @ $${Math.round(o.price)}`,'profit');o.size-=t;if(o.size<=0)return false}}return true});
+  if(filled>0){updateStats();renderBook();roundMetrics.takerFills+=filled}
+}
+
+function revealCard(){
+  if(G.revealed>=G.N)return;G.revealed++;
+  let oldFv=G.fv;G.fv=calcFairValue();let diff=Math.round(G.fv-oldFv);
+  let c=G.cards[G.revealed-1];
+  log(`${rn[c.rank-1]}${suitSym[c.suit]} → FV ${diff>=0?'+':''}${diff} → $${Math.round(G.fv)}`,'info');
+  renderCards();updateTracker();
+  let rd=difficulty==='easy'?2500+Math.random()*3000:difficulty==='normal'?1200+Math.random()*2000:500+Math.random()*1000;
+  setTimeout(()=>{spawnRivalOrders();renderBook()},rd);
+  spawnBotOrders();renderBook();updateStats();
+  // adverse bot checks AFTER a delay — giving you time to cancel
+  let adverseDelay=difficulty==='easy'?4000:difficulty==='normal'?2500:1500;
+  setTimeout(()=>{if(G.running){checkAdverse();renderBook()}},adverseDelay);
+  setTimeout(()=>{takerBotAct();renderBook()},800);
+}
+
+function tick(){
+  G.elapsed++;
+  document.getElementById('timerFill').style.width=Math.max(0,100*(1-G.elapsed/G.duration))+'%';
+  if(G.elapsed>=G.duration){endGame();return}
+  let interval=Math.floor(G.duration/G.N);
+  if(G.elapsed%interval===0&&G.revealed<G.N)revealCard();
+  if(G.elapsed%3===0){takerBotAct();renderBook()}
+  // periodic adverse check every 3 seconds (not instant)
+  if(G.elapsed%3===0&&G.revealed>0){checkAdverse();renderBook()}
+  if(G.myBids.length===0&&G.myAsks.length===0&&G.revealed>0)roundMetrics.timesNoOrders++;
+}
+
+function generateCards(){
+  let deck=shuffle(buildDeck());let dm=difficulty==='easy'?1.5:difficulty==='normal'?1:0.7;
+  if(mode==='sum'){G.N=10;let sub=shuffle(deck.slice(0,15+Math.floor(Math.random()*15)));G.cards=sub.slice(0,G.N);G.adverseMax=Math.round(5*dm)}
+  if(mode==='pairs'){G.N=10;let sub=deck.slice(0,5);G.cards=[];for(let i=0;i<G.N;i++)G.cards.push({...sub[Math.floor(Math.random()*5)]});G.adverseMax=Math.round(150*dm)}
+  if(mode==='product'){G.N=7;let sub=shuffle(deck.slice(0,10));G.cards=sub.slice(0,G.N);G.adverseMax=Math.round(80*dm)}
+  if(mode==='power'){G.N=7;let sub=shuffle(deck.slice(0,12));G.cards=sub.slice(0,G.N);G.adverseMax=Math.round(30*dm)}
+}
+
+function startGame(){
+  document.getElementById('preGame').style.display='none';
+  document.getElementById('gameArea').classList.add('active');
+  document.getElementById('orderDock').style.display='block';
+  document.getElementById('log').innerHTML='';
+  generateCards();
+  G.revealed=0;G.fv=calcFairValue();G.pos=0;G.realPnl=0;G.avgCost=0;
+  G.myBids=[];G.myAsks=[];G.botBids=[];G.botAsks=[];G.rivalBids=[];G.rivalAsks=[];
+  G.elapsed=0;G.duration=revealSpeed*G.N;G.running=true;
+  roundMetrics={sniped:0,gotSniped:0,takerFills:0,timesNoOrders:0};
+  orderPrice=Math.round(G.fv);
+  document.getElementById('priceDisplay').textContent=orderPrice;
+  log(`Started — ${mode.toUpperCase()}. ${G.N} cards. FV $${Math.round(G.fv)}`,'info');
+  spawnBotOrders();spawnRivalOrders();renderCards();renderBook();updateStats();updateTracker();
+  document.getElementById('timerFill').style.width='100%';
+  if(G.timer)clearInterval(G.timer);G.timer=setInterval(tick,1000);
+}
+
+function endGame(){
+  G.running=false;clearInterval(G.timer);
+  let tv=calcTrueValue();
+  if(G.pos!==0){if(G.pos>0)G.realPnl+=(tv-G.avgCost)*G.pos;else G.realPnl+=(G.avgCost-tv)*Math.abs(G.pos)}
+  G.pos=0;G.avgCost=0;G.revealed=G.N;
+  renderCards();updateTracker();
+  let final=Math.round(G.realPnl);
+  log(`DONE. True: $${tv}. P&L: $${final}`,final>=0?'profit':'loss');
+  showAlert(`True: $${tv} | P&L: $${final}`,final>=0?'success':'danger');
+  updateStats();
+  session.rounds++;session.totalPnl+=final;if(final>0)session.wins++;
+
+  setTimeout(()=>{
+    document.getElementById('orderDock').style.display='none';
+    document.getElementById('gameArea').classList.remove('active');
+    document.getElementById('preGame').style.display='block';
+    document.querySelector('.btn-start').textContent='Play Again';
+    document.getElementById('sessionStats').style.display='block';
+    document.getElementById('ssR').textContent=session.rounds;
+    let avg=Math.round(session.totalPnl/session.rounds);
+    document.getElementById('ssA').textContent=avg;
+    document.getElementById('ssA').style.color=avg>=0?'var(--green)':'var(--red)';
+    document.getElementById('ssW').textContent=Math.round(session.wins/session.rounds*100)+'%';
+    showCoaching(final);
+  },1500);
+}
+
+function showCoaching(fp){
+  let box=document.getElementById('coachBox');box.style.display='block';
+  let tips=[],gr={};
+  if(roundMetrics.gotSniped===0){gr.adv='<span style="color:var(--green)">A</span>';tips.push('✓ 没被 adverse bot 吃')}
+  else{gr.adv='<span style="color:var(--red)">F</span>';tips.push('✗ 被 adverse 吃 '+roundMetrics.gotSniped+' 次')}
+  if(roundMetrics.takerFills>80){gr.tak='<span style="color:var(--green)">A</span>';tips.push('✓ Taker 填了 '+roundMetrics.takerFills+' 单')}
+  else if(roundMetrics.takerFills>40){gr.tak='<span style="color:var(--amber)">B</span>';tips.push('△ Taker 只填 '+roundMetrics.takerFills+' 单，试更紧 spread')}
+  else{gr.tak='<span style="color:var(--red)">C</span>';tips.push('✗ Taker 只填 '+roundMetrics.takerFills+' 单，保持挂单！')}
+  if(roundMetrics.timesNoOrders<=3){gr.up='<span style="color:var(--green)">A</span>'}
+  else if(roundMetrics.timesNoOrders<=10){gr.up='<span style="color:var(--amber)">B</span>';tips.push('△ '+roundMetrics.timesNoOrders+'秒没挂单')}
+  else{gr.up='<span style="color:var(--red)">D</span>';tips.push('✗ '+roundMetrics.timesNoOrders+'秒没挂单！')}
+  if(fp>500){gr.pnl='<span style="color:var(--green)">A</span>'}
+  else if(fp>0){gr.pnl='<span style="color:var(--amber)">B</span>'}
+  else{gr.pnl='<span style="color:var(--red)">D</span>'}
+
+  document.getElementById('coachContent').innerHTML=`
+    <div class="grade-row">
+      <div class="grade-item"><div class="gl">纪律</div><div class="gv">${gr.adv}</div></div>
+      <div class="grade-item"><div class="gl">Taker</div><div class="gv">${gr.tak}</div></div>
+      <div class="grade-item"><div class="gl">在线</div><div class="gv">${gr.up}</div></div>
+      <div class="grade-item"><div class="gl">P&L</div><div class="gv">${gr.pnl}</div></div>
+    </div>
+    ${tips.map(t=>`<div class="coach-tip">${t}</div>`).join('')}
+  `;
+}
+</script>
+</body>
+</html>
