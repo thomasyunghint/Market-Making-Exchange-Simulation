@@ -1,6 +1,6 @@
 # Market Making Simulation
 
-A mobile-friendly practice tool for trading competition market making games. Built for the Trading at Georgia Tech intercollegiate competition format.
+A mobile-friendly practice tool for trading competition market making games. Built based on the Trading at Georgia Tech intercollegiate competition format.
 
 ## Market Making Simulation Configuration
 ![Market Making Simulation](Market_Making_Exchange_Simulation.png)
