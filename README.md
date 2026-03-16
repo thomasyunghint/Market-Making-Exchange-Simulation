@@ -26,9 +26,9 @@ You're a market maker. Post buy and sell orders around fair value. The taker bot
 
 **Core loop after each card reveal:**
 1. **CANCEL** all orders
-2. Adjust price to new fair value **−3** → **BUY**
-3. Adjust price to new fair value **+3** → **SELL**
-4. Wait for taker bot to fill you
+2. Adjust price to new fair value → **BUY**
+3. Adjust price to new fair value → **SELL**
+4. Wait for the taker bot to fill you
 
 ## Features
 
@@ -58,7 +58,7 @@ You're a market maker. Post buy and sell orders around fair value. The taker bot
 
 ## Based On
 
-Trading at Georgia Tech 2nd Annual Intercollegiate Trading Competition (March 2026). Game mechanics include market making with card-based contract valuation, taker bots, and adverse selection bots.
+Trading at Georgia Tech 2nd Annual Intercollegiate Trading Competition (March 2026). Game mechanics include market-making with card-based contract valuation, taker bots, and adverse-selection bots.
 
 ## License
 
