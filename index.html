@@ -488,23 +488,23 @@ function endGame(){
 function showCoaching(fp){
   let box=document.getElementById('coachBox');box.style.display='block';
   let tips=[],gr={};
-  if(roundMetrics.gotSniped===0){gr.adv='<span style="color:var(--green)">A</span>';tips.push('✓ 没被 adverse bot 吃')}
-  else{gr.adv='<span style="color:var(--red)">F</span>';tips.push('✗ 被 adverse 吃 '+roundMetrics.gotSniped+' 次')}
-  if(roundMetrics.takerFills>80){gr.tak='<span style="color:var(--green)">A</span>';tips.push('✓ Taker 填了 '+roundMetrics.takerFills+' 单')}
-  else if(roundMetrics.takerFills>40){gr.tak='<span style="color:var(--amber)">B</span>';tips.push('△ Taker 只填 '+roundMetrics.takerFills+' 单，试更紧 spread')}
-  else{gr.tak='<span style="color:var(--red)">C</span>';tips.push('✗ Taker 只填 '+roundMetrics.takerFills+' 单，保持挂单！')}
+  if(roundMetrics.gotSniped===0){gr.adv='<span style="color:var(--green)">A</span>';tips.push('✓ No adverse bot hits')}
+  else{gr.adv='<span style="color:var(--red)">F</span>';tips.push('✗ Adverse bot hit you '+roundMetrics.gotSniped+' times')}
+  if(roundMetrics.takerFills>80){gr.tak='<span style="color:var(--green)">A</span>';tips.push('✓ Taker filled '+roundMetrics.takerFills+' contracts')}
+  else if(roundMetrics.takerFills>40){gr.tak='<span style="color:var(--amber)">B</span>';tips.push('△ Taker only filled '+roundMetrics.takerFills+' — try tighter spread')}
+  else{gr.tak='<span style="color:var(--red)">C</span>';tips.push('✗ Taker only filled '+roundMetrics.takerFills+' — keep orders posted!')}
   if(roundMetrics.timesNoOrders<=3){gr.up='<span style="color:var(--green)">A</span>'}
-  else if(roundMetrics.timesNoOrders<=10){gr.up='<span style="color:var(--amber)">B</span>';tips.push('△ '+roundMetrics.timesNoOrders+'秒没挂单')}
-  else{gr.up='<span style="color:var(--red)">D</span>';tips.push('✗ '+roundMetrics.timesNoOrders+'秒没挂单！')}
+  else if(roundMetrics.timesNoOrders<=10){gr.up='<span style="color:var(--amber)">B</span>';tips.push('△ Book empty for '+roundMetrics.timesNoOrders+'s')}
+  else{gr.up='<span style="color:var(--red)">D</span>';tips.push('✗ Book empty for '+roundMetrics.timesNoOrders+'s!')}
   if(fp>500){gr.pnl='<span style="color:var(--green)">A</span>'}
   else if(fp>0){gr.pnl='<span style="color:var(--amber)">B</span>'}
   else{gr.pnl='<span style="color:var(--red)">D</span>'}
 
   document.getElementById('coachContent').innerHTML=`
     <div class="grade-row">
-      <div class="grade-item"><div class="gl">纪律</div><div class="gv">${gr.adv}</div></div>
+      <div class="grade-item"><div class="gl">Discipline</div><div class="gv">${gr.adv}</div></div>
       <div class="grade-item"><div class="gl">Taker</div><div class="gv">${gr.tak}</div></div>
-      <div class="grade-item"><div class="gl">在线</div><div class="gv">${gr.up}</div></div>
+      <div class="grade-item"><div class="gl">Uptime</div><div class="gv">${gr.up}</div></div>
       <div class="grade-item"><div class="gl">P&L</div><div class="gv">${gr.pnl}</div></div>
     </div>
     ${tips.map(t=>`<div class="coach-tip">${t}</div>`).join('')}
