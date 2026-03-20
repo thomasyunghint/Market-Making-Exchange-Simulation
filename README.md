@@ -9,7 +9,8 @@ A mobile-friendly practice tool for trading competition market making games. Bui
 
 Just open `index.html` in your browser. No install needed. Works on iPhone/Android.
 
-**[Live Demo]([https://yourusername.github.io/market-making-simulation/](https://thomasyunghint.github.io/Market-Making-Exchange-Simulation/))** ← update this after deploying
+**[Live Demo]([https://yourusername.github.io/market-making-simulation/](https://thomasyunghint.github.io/Market-Making-Exchange-Simulation/))**
+https://thomasyunghint.github.io/Market-Making-Exchange-Simulation/
 
 ## Game Modes
 
